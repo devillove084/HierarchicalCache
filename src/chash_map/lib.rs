@@ -1,9 +1,4 @@
-#![deny(
-    missing_docs,
-    missing_debug_implementations,
-    unreachable_pub,
-    broken_intra_doc_links
-)]
+#![allow(missing_docs)]
 #![allow(clippy::cognitive_complexity)]
 use crossbeam_epoch::Guard;
 use std::ops::Deref;

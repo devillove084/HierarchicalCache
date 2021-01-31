@@ -1,3 +1,5 @@
+#![allow(deprecated)]
+
 use crate::raw::Table;
 use core::sync::atomic::{spin_loop_hint, AtomicBool, AtomicI64, Ordering};
 use crossbeam_epoch::{Atomic, Guard, Owned, Shared};
@@ -5,9 +7,6 @@ use parking_lot::Mutex;
 use std::borrow::Borrow;
 use std::thread::{current, park, Thread};
 
-/// Entry in a bin.
-///
-/// Will _generally_ be `Node`. Any entry that is not first in the bin, will be a `Node`.
 #[derive(Debug)]
 pub(crate) enum BinEntry<K, V> {
     Node(Node<K, V>),
@@ -59,7 +58,7 @@ impl<K, V> BinEntry<K, V> {
     }
 }
 
-/// Key-value entry.
+
 #[derive(Debug)]
 pub(crate) struct Node<K, V> {
     pub(crate) hash: u64,
@@ -92,7 +91,7 @@ impl<K, V> Node<K, V> {
 
 /* ------------------------ TreeNodes ------------------------ */
 
-/// Nodes for use in TreeBins.
+
 #[derive(Debug)]
 pub(crate) struct TreeNode<K, V> {
     // Node properties
@@ -107,10 +106,10 @@ pub(crate) struct TreeNode<K, V> {
 }
 
 impl<K, V> TreeNode<K, V> {
-    /// Constructs a new TreeNode with the given attributes to be inserted into a TreeBin.
-    ///
-    /// This does yet not arrange this node and its `next` nodes into a tree, since the tree
-    /// structure is maintained globally by the TreeBin.
+
+
+
+
     pub(crate) fn new(
         hash: u64,
         key: K,
@@ -128,8 +127,8 @@ impl<K, V> TreeNode<K, V> {
         }
     }
 
-    /// Returns the `TreeNode` (or `Shared::null()` if not found) for the given
-    /// key, starting at the given node.
+
+
     pub(crate) fn find_tree_node<'g, Q>(
         from: Shared<'g, BinEntry<K, V>>,
         hash: u64,
@@ -140,14 +139,14 @@ impl<K, V> TreeNode<K, V> {
         K: Borrow<Q>,
         Q: ?Sized + Ord,
     {
-        // NOTE: in the Java code, this method is implemented on the `TreeNode`
-        // instance directly, as they don't need to worry about shared pointers.
-        // The Java code then uses a do-while loop here, as `self`/`this` always
-        // exists so the condition below will always be satisfied on the first
-        // iteration. We however _do_ have shared pointers and _do not_ have
-        // do-while loops, so we end up with one extra check since we also need
-        // to introduce some `continue` due to the extraction of local
-        // assignments from checks.
+
+
+
+
+
+
+
+
         let mut p = from;
         while !p.is_null() {
             // safety: the containing TreeBin of all TreeNodes was read under our
@@ -213,17 +212,12 @@ const WRITER: i64 = 1; // set while holding write lock
 const WAITER: i64 = 2; // set when waiting for write lock
 const READER: i64 = 4; // increment value for setting read lock
 
-/// Private representation for movement direction along tree successors.
+
 enum Dir {
     Left,
     Right,
 }
 
-/// TreeNodes used at the heads of bins. TreeBins do not hold user keys or
-/// values, but instead point to a list of TreeNodes and their root. They also
-/// maintain a parasitic read-write lock forcing writers (who hold the bin lock)
-/// to wait for readers (who do not) to complete before tree restructuring
-/// operations.
 #[derive(Debug)]
 pub(crate) struct TreeBin<K, V> {
     pub(crate) root: Atomic<BinEntry<K, V>>,
@@ -237,16 +231,9 @@ impl<K, V> TreeBin<K, V>
 where
     K: Ord,
 {
-    /// Constructs a new bin from the given nodes.
-    ///
-    /// Nodes are arranged into an ordered red-black tree.
     pub(crate) fn new(bin: Owned<BinEntry<K, V>>, guard: &Guard) -> Self {
         let mut root = Shared::null();
         let bin = bin.into_shared(guard);
-
-        // safety: We own the nodes for creating this new TreeBin, so they are
-        // not shared with another thread and cannot get invalidated.
-        // Structurally, TreeNodes always point to TreeNodes, so this is sound.
         let mut x = bin;
         while !x.is_null() {
             let x_deref = unsafe { TreeNode::get_tree_node(x) };
@@ -327,7 +314,7 @@ where
 }
 
 impl<K, V> TreeBin<K, V> {
-    /// Acquires write lock for tree restucturing.
+
     fn lock_root(&self, guard: &Guard) {
         if self
             .lock_state
@@ -339,12 +326,12 @@ impl<K, V> TreeBin<K, V> {
         }
     }
 
-    /// Releases write lock for tree restructuring.
+
     fn unlock_root(&self) {
         self.lock_state.store(0, Ordering::Release);
     }
 
-    /// Possibly blocks awaiting root lock.
+
     fn contended_lock(&self, guard: &Guard) {
         let mut waiting = false;
         let mut state: i64;
@@ -360,32 +347,12 @@ impl<K, V> TreeBin<K, V> {
                     // we won the race for the lock and get to return from blocking
                     if waiting {
                         let waiter = self.waiter.swap(Shared::null(), Ordering::SeqCst, guard);
-                        // safety: we are the only thread that modifies the
-                        // `waiter` thread handle (reading threads only use it
-                        // to notify us). Thus, having stored a valid value
-                        // below, `waiter` is a valid pointer.
-                        //
-                        // The reading thread that notifies us does so as its
-                        // last action in `find` and then lets go of the
-                        // reference immediately. _New_ reading threads already
-                        // take the slow path since we are `WAITING`, so they do
-                        // not obtain new references to our thread handle. Also,
-                        // we just swapped out that handle, so it is no longer
-                        // reachable.
-                        //
-                        // We cannot safely drop the waiter immediately, because we may not have
-                        // parked after storing our thread handle in `waiter`. This can happen if
-                        // we noticed that there were no readers immediately after setting us as
-                        // the waiter, and then went directly into this branch. In that case, some
-                        // other thread may simultaneously have noticed that we wanted to be woken
-                        // up, and be trying to call `.unpark`. So, we `defer_destroy` instead.
+                       
                         unsafe { guard.defer_destroy(waiter) };
                     }
                     return;
                 }
             } else if state & WAITER == 0 {
-                // we have not indicated yet that we are waiting, so we need to
-                // do that now
                 if self
                     .lock_state
                     .compare_and_swap(state, state | WAITER, Ordering::SeqCst)
@@ -403,9 +370,9 @@ impl<K, V> TreeBin<K, V> {
         }
     }
 
-    /// Returns matching node or `Shared::null()` if none. Tries to search using
-    /// tree comparisons from root, but continues linear search when lock not
-    /// available.
+
+
+
     pub(crate) fn find<'g, Q>(
         bin: Shared<'g, BinEntry<K, V>>,
         hash: u64,
@@ -416,38 +383,11 @@ impl<K, V> TreeBin<K, V> {
         K: Borrow<Q>,
         Q: ?Sized + Ord,
     {
-        // safety: bin is a valid pointer.
-        //
-        // there are three cases when a bin pointer is invalidated:
-        //
-        //  1. if the table was resized, bin is a move entry, and the resize has completed. in
-        //     that case, the table (and all its heads) will be dropped in the next epoch
-        //     following that.
-        //  2. if the table is being resized, bin may be swapped with a move entry. the old bin
-        //     will then be dropped in the following epoch after that happens.
-        //  3. when elements are inserted into or removed from the map, bin may be changed into
-        //     or from a TreeBin from or into a regular, linear bin. the old bin will also be
-        //     dropped in the following epoch if that happens.
-        //
-        // in all cases, we held the guard when we got the reference to the bin. if any such
-        // swap happened, it must have happened _after_ we read. since we did the read while
-        // pinning the epoch, the drop must happen in the _next_ epoch (i.e., the one that we
-        // are holding up by holding on to our guard).
         let bin_deref = unsafe { bin.deref() }.as_tree_bin().unwrap();
         let mut element = bin_deref.first.load(Ordering::SeqCst, guard);
         while !element.is_null() {
             let s = bin_deref.lock_state.load(Ordering::SeqCst);
             if s & (WAITER | WRITER) != 0 {
-                // another thread is modifying or wants to modify the tree
-                // (write). As long as that's the case, we follow the `next`
-                // pointers of the `TreeNode` linearly, as we cannot trust the
-                // tree's structure.
-                //
-                // safety: we were read under our guard, at which point the tree
-                // structure was valid. Since our guard pins the current epoch,
-                // the TreeNodes remain valid for at least as long as we hold
-                // onto the guard.
-                // Structurally, TreeNodes always point to TreeNodes, so this is sound.
                 let element_deref = unsafe { TreeNode::get_tree_node(element) };
                 let element_key = &element_deref.node.key;
                 if element_deref.node.hash == hash && element_key.borrow() == key {
@@ -487,44 +427,17 @@ impl<K, V> TreeBin<K, V> {
         Shared::null()
     }
 
-    /// Unlinks the given node, which must be present before this call.
-    ///
-    /// This is messier than typical red-black deletion code because we cannot
-    /// swap the contents of an interior node with a leaf successor that is
-    /// pinned by `next` pointers that are accessible independently of the bin
-    /// lock. So instead we swap the tree links.
-    ///
-    /// Returns `true` if the bin is now too small and should be untreeified.
-    ///
-    /// # Safety
-    /// The given node is only marked for garbage collection if the bin remains
-    /// large enough to be a `TreeBin`. If this method returns `true`, indicating
-    /// that the bin should be untreeified, the given node is only unlinked from
-    /// linear traversal, but not from the tree. This makes the node unreachable
-    /// through linear reads and excludes it from being dropped when the bin is
-    /// dropped. However, reading threads may still obtain a reference to until
-    /// the bin is swapped out for a linear bin.
-    ///
-    /// The caller of this method _must_ ensure that the given node is properly
-    /// marked for garbage collection _after_ this bin has been swapped out. If
-    /// the value of the given node was supposed to get dropped as well
-    /// (`drop_value` was true), the caller must do the same for the value.
     pub(crate) unsafe fn remove_tree_node<'g>(
         &'g self,
         p: Shared<'g, BinEntry<K, V>>,
         drop_value: bool,
         guard: &'g Guard,
     ) -> bool {
-        // safety: we were read under our guard, at which point the tree
-        // structure was valid. Since our guard pins the current epoch, the
-        // TreeNodes remain valid for at least as long as we hold onto the
-        // guard. Additionally, this method assumes `p` to be non-null.
-        // Structurally, TreeNodes always point to TreeNodes, so this is sound.
+
         let p_deref = TreeNode::get_tree_node(p);
         let next = p_deref.node.next.load(Ordering::SeqCst, guard);
         let prev = p_deref.prev.load(Ordering::SeqCst, guard);
 
-        // unlink traversal pointers
         if prev.is_null() {
             // the node to delete is the first node
             self.first.store(next, Ordering::SeqCst);
@@ -548,16 +461,8 @@ impl<K, V> TreeBin<K, V> {
             self.root.store(Shared::null(), Ordering::SeqCst);
             return true;
         }
-
-        // if we are now too small to be a `TreeBin`, we don't need to worry
-        // about restructuring the tree since the bin will be untreeified
-        // anyway, so we check that
         let mut root = self.root.load(Ordering::SeqCst, guard);
-        // TODO: Can `root` even be `null`?
-        // The Java code has `NULL` checks for this, but in theory it should not be possible to
-        // encounter a tree that has no root when we have its lock. It should always have at
-        // least `UNTREEIFY_THRESHOLD` nodes. If it is indeed impossible we should replace
-        // this with an assertion instead.
+
         if root.is_null()
             || TreeNode::get_tree_node(root)
                 .right
@@ -578,18 +483,8 @@ impl<K, V> TreeBin<K, V> {
                 return true;
             }
         }
-
-        // if we get here, we know that we will still be a tree and have
-        // unlinked the `next` and `prev` pointers, so it's time to restructure
-        // the tree
         self.lock_root(guard);
-        // NOTE: since we have the write lock for the tree, we know that all
-        // readers will read along the linear `next` pointers until we release
-        // the lock (these pointers were adjusted above to exclude the removed
-        // node and are synchronized as `SeqCst`). This means that we can
-        // operate on the _other_ pointers of tree nodes that represent the tree
-        // structure using a `Relaxed` ordering. The release of the write lock
-        // will then synchronize with later readers who will see the new values.
+
         let replacement;
         let p_left = p_deref.left.load(Ordering::Relaxed, guard);
         let p_right = p_deref.right.load(Ordering::Relaxed, guard);
@@ -674,14 +569,6 @@ impl<K, V> TreeBin<K, V> {
                     .store(successor, Ordering::Relaxed);
             }
 
-            // We have swapped `p` with `successor`, which is the next element
-            // after `p` in `(hash, key)` order (the smallest element larger
-            // than `p`). To actually remove `p`, we need to check if
-            // `successor` has a right child (it cannot have a left child, as
-            // otherwise _it_ would be the `successor`). If not, we can just
-            // directly unlink `p`, since it is now a leaf. Otherwise, we have
-            // to replace it with the right child of `successor` (which is now
-            // also its right child), which preserves the ordering.
             if !successor_right.is_null() {
                 replacement = successor_right;
             } else {
@@ -749,12 +636,6 @@ impl<K, V> TreeBin<K, V> {
         }
         self.unlock_root();
 
-        // mark the old node and its value for garbage collection
-        // safety: we just completely unlinked `p` from both linear and tree
-        // traversal, making it and its value unreachable for any future thread.
-        // Any existing references to one of them were obtained under a guard
-        // that pins an epoch <= our epoch, and thus have to be released before
-        // `p` is actually dropped.
         #[allow(unused_unsafe)]
         unsafe {
             if drop_value {
@@ -774,9 +655,9 @@ impl<K, V> TreeBin<K, V>
 where
     K: Ord + Send + Sync,
 {
-    /// Finds or adds a node to the tree.
-    /// If a node for the given key already exists, it is returned. Otherwise,
-    /// returns `Shared::null()`.
+
+
+
     pub(crate) fn find_or_put_tree_val<'g>(
         &'g self,
         hash: u64,
@@ -800,11 +681,11 @@ where
             self.first.store(tree_node, Ordering::Release);
             return Shared::null();
         }
-        // safety: we were read under our guard, at which point the tree
-        // structure was valid. Since our guard pins the current epoch, the
-        // TreeNodes remain valid for at least as long as we hold onto the
-        // guard.
-        // Structurally, TreeNodes always point to TreeNodes, so this is sound.
+
+
+
+
+
         loop {
             let p_deref = unsafe { TreeNode::get_tree_node(p) };
             let p_hash = p_deref.node.hash;
@@ -913,20 +794,20 @@ where
 
 impl<K, V> Drop for TreeBin<K, V> {
     fn drop(&mut self) {
-        // safety: we have &mut self _and_ all references we have returned are bound to the
-        // lifetime of their borrow of self, so there cannot be any outstanding references to
-        // anything in the map.
+
+
+
         unsafe { self.drop_fields(true) };
     }
 }
 
 impl<K, V> TreeBin<K, V> {
-    /// Defers dropping the given tree bin without its nodes' values.
-    ///
-    /// # Safety
-    /// The given bin must be a valid, non-null BinEntry::TreeBin and the caller must ensure
-    /// that no references to the bin can be obtained by other threads after the call to this
-    /// method.
+
+
+
+
+
+
     pub(crate) unsafe fn defer_drop_without_values<'g>(
         bin: Shared<'g, BinEntry<K, V>>,
         guard: &'g Guard,
@@ -940,30 +821,30 @@ impl<K, V> TreeBin<K, V> {
         });
     }
 
-    /// Drops the given tree bin, but only drops its nodes' values when specified.
-    ///
-    /// # Safety
-    /// The pointer to the tree bin must be valid and the caller must be the single owner
-    /// of the tree bin. If the nodes' values are to be dropped, there must be no outstanding
-    /// references to these values in other threads and it must be impossible to obtain them.
-    pub(crate) unsafe fn drop_fields(&mut self, drop_values: bool) {
-        // assume ownership of atomically shared references. note that it is
-        // sufficient to follow the `next` pointers of the `first` element in
-        // the bin, since the tree pointers point to the same nodes.
 
-        // swap out first pointer so nodes will not get dropped again when
-        // `tree_bin` is dropped
+
+
+
+
+
+    pub(crate) unsafe fn drop_fields(&mut self, drop_values: bool) {
+
+
+
+
+
+
         let guard = crossbeam_epoch::unprotected();
         let p = self.first.swap(Shared::null(), Ordering::Relaxed, guard);
         Self::drop_tree_nodes(p, drop_values, guard);
     }
 
-    /// Drops the given list of tree nodes, but only drops their values when specified.
-    ///
-    /// # Safety
-    /// The pointers to the tree nodes must be valid and the caller must be the single owner
-    /// of the tree nodes. If the nodes' values are to be dropped, there must be no outstanding
-    /// references to these values in other threads and it must be impossible to obtain them.
+
+
+
+
+
+
     pub(crate) unsafe fn drop_tree_nodes<'g>(
         from: Shared<'g, BinEntry<K, V>>,
         drop_values: bool,
@@ -987,21 +868,12 @@ impl<K, V> TreeBin<K, V> {
 
 /* Helper impls to avoid code explosion */
 impl<K, V> TreeNode<K, V> {
-    /// Gets the `BinEntry::TreeNode(tree_node)` behind the given pointer and
-    /// returns its `tree_node`.
-    ///
-    /// # Safety
-    /// All safety concerns of [`deref`](Shared::deref) apply. In particular, the
-    /// supplied pointer must be non-null and must point to valid memory.
-    /// Additionally, it must point to an instance of BinEntry that is actually a
-    /// TreeNode.
+
     #[inline]
     pub(crate) unsafe fn get_tree_node<'g>(bin: Shared<'g, BinEntry<K, V>>) -> &'g TreeNode<K, V> {
         bin.deref().as_tree_node().unwrap()
     }
 }
-
-/* ----------------------------------------------------------------- */
 
 macro_rules! treenode {
     ($pointer:ident) => {
@@ -1058,11 +930,7 @@ impl<K, V> TreeNode<K, V> {
         if p.is_null() {
             return root;
         }
-        // safety: the containing TreeBin of all TreeNodes was read under our
-        // guard, at which point the tree structure was valid. Since our guard
-        // pins the current epoch, the TreeNodes remain valid for at least as
-        // long as we hold onto the guard.
-        // Structurally, TreeNodes always point to TreeNodes, so this is sound.
+
         let p_deref = treenode!(p);
         let left = p_deref.left.load(Ordering::Relaxed, guard);
         if left.is_null() {
@@ -1100,11 +968,7 @@ impl<K, V> TreeNode<K, V> {
         mut x: Shared<'g, BinEntry<K, V>>,
         guard: &'g Guard,
     ) -> Shared<'g, BinEntry<K, V>> {
-        // safety: the containing TreeBin of all TreeNodes was read under our
-        // guard, at which point the tree structure was valid. Since our guard
-        // pins the current epoch, the TreeNodes remain valid for at least as
-        // long as we hold onto the guard.
-        // Structurally, TreeNodes always point to TreeNodes, so this is sound.
+
         treenode!(x).red.store(true, Ordering::Relaxed);
 
         let mut x_parent: Shared<'_, BinEntry<K, V>>;
@@ -1203,11 +1067,11 @@ impl<K, V> TreeNode<K, V> {
         let mut x_parent: Shared<'_, BinEntry<K, V>>;
         let mut x_parent_left: Shared<'_, BinEntry<K, V>>;
         let mut x_parent_right: Shared<'_, BinEntry<K, V>>;
-        // safety: the containing TreeBin of all TreeNodes was read under our
-        // guard, at which point the tree structure was valid. Since our guard
-        // pins the current epoch, the TreeNodes remain valid for at least as
-        // long as we hold onto the guard.
-        // Structurally, TreeNodes always point to TreeNodes, so this is sound.
+
+
+
+
+
         loop {
             if x.is_null() || x == root {
                 return root;
@@ -1355,13 +1219,9 @@ impl<K, V> TreeNode<K, V> {
             }
         }
     }
-    /// Checks invariants recursively for the tree of Nodes rootet at t.
+
     fn check_invariants<'g>(t: Shared<'g, BinEntry<K, V>>, guard: &'g Guard) {
-        // safety: the containing TreeBin of all TreeNodes was read under our
-        // guard, at which point the tree structure was valid. Since our guard
-        // pins the current epoch, the TreeNodes remain valid for at least as
-        // long as we hold onto the guard.
-        // Structurally, TreeNodes always point to TreeNodes, so this is sound.
+
         let t_deref = treenode!(t);
         let t_parent = t_deref.parent.load(Ordering::Relaxed, guard);
         let t_left = t_deref.left.load(Ordering::Relaxed, guard);
@@ -1433,141 +1293,5 @@ impl<K, V> TreeNode<K, V> {
         if !t_right.is_null() {
             Self::check_invariants(t_right, guard)
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crossbeam_epoch::Owned;
-    use std::sync::atomic::Ordering;
-
-    fn new_node(hash: u64, key: usize, value: usize) -> Node<usize, usize> {
-        Node {
-            hash,
-            key,
-            value: Atomic::new(value),
-            next: Atomic::null(),
-            lock: Mutex::new(()),
-        }
-    }
-
-    #[test]
-    fn find_node_no_match() {
-        let guard = &crossbeam_epoch::pin();
-        let node2 = new_node(4, 5, 6);
-        let entry2 = BinEntry::Node(node2);
-        let node1 = new_node(1, 2, 3);
-        node1.next.store(Owned::new(entry2), Ordering::SeqCst);
-        let entry1 = Owned::new(BinEntry::Node(node1)).into_shared(guard);
-        let mut tab = Table::from(vec![Atomic::from(entry1)]);
-
-        // safety: we have not yet dropped entry1
-        assert!(tab.find(unsafe { entry1.deref() }, 1, &0, guard).is_null());
-        tab.drop_bins();
-    }
-
-    #[test]
-    fn find_node_single_match() {
-        let guard = &crossbeam_epoch::pin();
-        let entry = Owned::new(BinEntry::Node(new_node(1, 2, 3))).into_shared(guard);
-        let mut tab = Table::from(vec![Atomic::from(entry)]);
-        assert_eq!(
-            // safety: we have not yet dropped entry
-            unsafe { tab.find(entry.deref(), 1, &2, guard).deref() }
-                .as_node()
-                .unwrap()
-                .key,
-            2
-        );
-        tab.drop_bins();
-    }
-
-    #[test]
-    fn find_node_multi_match() {
-        let guard = &crossbeam_epoch::pin();
-        let node2 = new_node(4, 5, 6);
-        let entry2 = BinEntry::Node(node2);
-        let node1 = new_node(1, 2, 3);
-        node1.next.store(Owned::new(entry2), Ordering::SeqCst);
-        let entry1 = Owned::new(BinEntry::Node(node1)).into_shared(guard);
-        let mut tab = Table::from(vec![Atomic::from(entry1)]);
-        assert_eq!(
-            // safety: we have not yet dropped entry1
-            unsafe { tab.find(entry1.deref(), 4, &5, guard).deref() }
-                .as_node()
-                .unwrap()
-                .key,
-            5
-        );
-        tab.drop_bins();
-    }
-
-    #[test]
-    fn find_moved_empty_bins_no_match() {
-        let guard = &crossbeam_epoch::pin();
-        let mut table = Table::<usize, usize>::new(1);
-        let mut table2 = Owned::new(Table::new(1)).into_shared(guard);
-
-        let entry = table.get_moved(table2, guard);
-        table.store_bin(0, entry);
-        assert!(table.find(&BinEntry::Moved, 1, &2, guard).is_null());
-        table.drop_bins();
-        // safety: table2 is still valid and not accessed by different threads
-        unsafe { table2.deref_mut() }.drop_bins();
-        unsafe { guard.defer_destroy(table2) };
-    }
-
-    #[test]
-    fn find_moved_no_bins_no_match() {
-        let guard = &crossbeam_epoch::pin();
-        let mut table = Table::<usize, usize>::new(1);
-        let mut table2 = Owned::new(Table::new(0)).into_shared(guard);
-        let entry = table.get_moved(table2, guard);
-        table.store_bin(0, entry);
-        assert!(table.find(&BinEntry::Moved, 1, &2, guard).is_null());
-        table.drop_bins();
-        // safety: table2 is still valid and not accessed by different threads
-        unsafe { table2.deref_mut() }.drop_bins();
-        unsafe { guard.defer_destroy(table2) };
-    }
-
-    #[test]
-    fn find_moved_null_bin_no_match() {
-        let guard = &crossbeam_epoch::pin();
-        let mut table = Table::<usize, usize>::new(1);
-        let mut table2 = Owned::new(Table::new(2)).into_shared(guard);
-        unsafe { table2.deref() }.store_bin(0, Owned::new(BinEntry::Node(new_node(1, 2, 3))));
-        let entry = table.get_moved(table2, guard);
-        table.store_bin(0, entry);
-        assert!(table.find(&BinEntry::Moved, 0, &1, guard).is_null());
-        table.drop_bins();
-        // safety: table2 is still valid and not accessed by different threads
-        unsafe { table2.deref_mut() }.drop_bins();
-        unsafe { guard.defer_destroy(table2) };
-    }
-
-    #[test]
-    fn find_moved_match() {
-        let guard = &crossbeam_epoch::pin();
-        let mut table = Table::<usize, usize>::new(1);
-        let mut table2 = Owned::new(Table::new(1)).into_shared(guard);
-        // safety: table2 is still valid
-        unsafe { table2.deref() }.store_bin(0, Owned::new(BinEntry::Node(new_node(1, 2, 3))));
-        let entry = table.get_moved(table2, guard);
-        table.store_bin(0, entry);
-        assert_eq!(
-            // safety: entry is still valid since the table was not dropped and the
-            // entry was not removed
-            unsafe { table.find(&BinEntry::Moved, 1, &2, guard).deref() }
-                .as_node()
-                .unwrap()
-                .key,
-            2
-        );
-        table.drop_bins();
-        // safety: table2 is still valid and not accessed by different threads
-        unsafe { table2.deref_mut() }.drop_bins();
-        unsafe { guard.defer_destroy(table2) };
     }
 }
