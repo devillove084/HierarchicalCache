@@ -4,6 +4,7 @@ use std::sync::Arc;
 use chash_map::*;
 
 fn main() {
+    
     let _map = HashMap::<usize, usize>::new();
 
     let guard = _map.guard();

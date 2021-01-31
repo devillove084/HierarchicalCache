@@ -1,0 +1,4 @@
+
+fn te() {
+    print!("Test!!!");
+}
