@@ -4,7 +4,7 @@
 // use std::sync::Arc;
 // use chash_map::*;
 
-extern crate coffine;
+//extern crate coffine;
 
 use coffine::{Cache, OnEvict};
 use std::time::Duration;
@@ -19,6 +19,7 @@ impl OnEvict<usize, usize> for Evict {
 }
 
 fn main() {
+    
 
     /// This is for cache test!!!
     let mut cache = Cache::with_on_evict(10, Evict::default()).with_metrics();
