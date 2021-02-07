@@ -5,8 +5,10 @@
 // use chash_map::*;
 
 //extern crate coffine;
+mod lcache;
+mod chashmap;
 
-use coffine::{Cache, OnEvict};
+use lcache::{Cache, OnEvict};
 use std::time::Duration;
 
 #[derive(Default, Debug)]

@@ -8,7 +8,7 @@ macro_rules! make_reader {
                 &$state.$id
             };
             ($state:expr, $key:expr) => {
-                $state.$id.get($key)
+                $state.$id.get($key);
             };
         }
     };

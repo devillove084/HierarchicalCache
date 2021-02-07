@@ -1,9 +1,7 @@
 use bytes::Bytes;
 //use dashmap::DashMap;
-use chash_map::HashMap as DashMap;
-use growable_bloom_filter::GrowableBloom;
-/// Common Types in the project.
-use std::collections::{HashMap, HashSet, VecDeque};
+use chash_map;
+use std::collections::VecDeque;
 use std::convert::From;
 use std::sync::atomic::AtomicU64;
 use std::sync::Arc;
@@ -152,24 +150,24 @@ impl ReturnValue {
 }
 
 /// Canonical type for Key-Value storage.
-type KeyString = DashMap<Key, Value>;
+type KeyString = chash_map::HashMap<Key, Value>;
 /// Canonical type for Key-Set storage.
-type KeySet = DashMap<Key, HashSet<Value>>;
+type KeySet = chash_map::HashMap<Key, chash_map::HashSet<Value>>;
 /// Canonical type for Key-List storage.
-type KeyList = DashMap<Key, VecDeque<Value>>;
+type KeyList = chash_map::HashMap<Key, VecDeque<Value>>;
 /// Canonical type for Key-Hash storage.
-type KeyHash = DashMap<Key, HashMap<Key, Value>>;
+type KeyHash = chash_map::HashMap<Key, chash_map::HashMap<Key, Value>>;
 /// Canonical type for Key-Hash storage.
-type KeyZSet = DashMap<Key, SortedSet>;
+type KeyZSet = chash_map::HashMap<Key, SortedSet>;
 /// Canonical type for Key-Bloom storage.
-type KeyBloom = DashMap<Key, GrowableBloom>;
-type KeyStack = DashMap<Key, Stack<Value>>;
+// type KeyBloom = chash_map::HashMap<Key, GrowableBloom>;
+type KeyStack = chash_map::HashMap<Key, Stack<Value>>;
 
 /// Top level database struct.
 /// Holds all StateRef dbs, and will hand them out on request.
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
 pub struct StateStore {
-    pub states: DashMap<Index, StateRef>,
+    pub states: chash_map::HashMap<Index, StateRef>,
     #[serde(skip)]
     pub commands_ran_since_save: AtomicU64,
     #[serde(skip)]

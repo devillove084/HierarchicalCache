@@ -4,14 +4,13 @@
 name = "HierarchicalCache"
 version = "0.1.0"
 dependencies = [
+ "ahash 0.7.0",
  "bincode",
  "bytes",
- "chash_map",
- "coffine",
  "criterion",
  "crossbeam-epoch 0.8.2",
+ "dashmap 4.0.2",
  "directories",
- "ds_opt",
  "futures",
  "futures-util",
  "growable-bloom-filter",
@@ -35,7 +34,7 @@ dependencies = [
  "shlex",
  "slog",
  "sloggers",
- "smallvec 1.6.1",
+ "smallvec",
  "spin",
  "structopt",
  "tokio",
@@ -56,6 +55,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e8fd72866655d1904d6b0997d0b07ba561047d070fbe29de039031c641b61217"
 dependencies = [
  "const-random",
+]
+
+[[package]]
+name = "ahash"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "efa60d2eadd8b12a996add391db32bd1153eac697ba4869660c0016353611426"
+dependencies = [
+ "getrandom 0.2.2",
+ "once_cell",
+ "version_check",
 ]
 
 [[package]]
@@ -259,16 +269,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "chash_map"
-version = "0.1.0"
-dependencies = [
- "ahash",
- "crossbeam-epoch 0.8.2",
- "num_cpus",
- "parking_lot 0.10.2",
-]
-
-[[package]]
 name = "chrono"
 version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -303,17 +303,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ddfc5b9aa5d4507acaf872de71051dfd0e309860e88966e1051e462a077aac4f"
 dependencies = [
  "bitflags 1.2.1",
-]
-
-[[package]]
-name = "coffine"
-version = "0.1.0"
-dependencies = [
- "chash_map",
- "indexmap",
- "log 0.4.14",
- "probabilistic-collections",
- "rand",
 ]
 
 [[package]]
@@ -507,9 +496,20 @@ version = "3.11.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0f260e2fc850179ef410018660006951c1b55b79e8087e87111a2c388994b9b5"
 dependencies = [
- "ahash",
+ "ahash 0.3.8",
  "cfg-if 0.1.10",
  "num_cpus",
+]
+
+[[package]]
+name = "dashmap"
+version = "4.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e77a43b28d0668df09411cb0bc9a8c2adc40f9a048afe863e05fd43251e8e39c"
+dependencies = [
+ "cfg-if 1.0.0",
+ "num_cpus",
+ "serde",
 ]
 
 [[package]]
@@ -562,39 +562,6 @@ dependencies = [
  "libc",
  "redox_users 0.4.0",
  "winapi 0.3.9",
-]
-
-[[package]]
-name = "ds_opt"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "bytes",
- "chash_map",
- "directories",
- "futures",
- "futures-util",
- "growable-bloom-filter",
- "lazy_static",
- "memchr",
- "num-traits",
- "parking_lot 0.9.0",
- "promptly",
- "rand",
- "rmp-serde",
- "seahash",
- "serde",
- "serde_bytes",
- "serde_derive",
- "shlex",
- "slog",
- "sloggers",
- "smallvec 1.6.1",
- "spin",
- "structopt",
- "tokio",
- "tokio-util",
- "x7",
 ]
 
 [[package]]
@@ -1084,17 +1051,6 @@ checksum = "0ab1bc2a289d34bd04a330323ac98a1b4bc82c9d9fcb1e66b63caa84da26b575"
 
 [[package]]
 name = "parking_lot"
-version = "0.9.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f842b1982eb6c2fe34036a4fbfb06dd185a3f5c8edfaacdf7d1ea10b07de6252"
-dependencies = [
- "lock_api 0.3.4",
- "parking_lot_core 0.6.2",
- "rustc_version",
-]
-
-[[package]]
-name = "parking_lot"
 version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3a704eb390aafdc107b0e392f56a82b668e3a71366993b5340f5833fd62505e"
@@ -1116,21 +1072,6 @@ dependencies = [
 
 [[package]]
 name = "parking_lot_core"
-version = "0.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b876b1b9e7ac6e1a74a6da34d25c42e17e8862aa409cbbbdcfc8d86c6f3bc62b"
-dependencies = [
- "cfg-if 0.1.10",
- "cloudabi",
- "libc",
- "redox_syscall 0.1.57",
- "rustc_version",
- "smallvec 0.6.14",
- "winapi 0.3.9",
-]
-
-[[package]]
-name = "parking_lot_core"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d58c7c768d4ba344e3e8d72518ac13e259d7c7ade24167003b8488e10b6740a3"
@@ -1139,7 +1080,7 @@ dependencies = [
  "cloudabi",
  "libc",
  "redox_syscall 0.1.57",
- "smallvec 1.6.1",
+ "smallvec",
  "winapi 0.3.9",
 ]
 
@@ -1153,7 +1094,7 @@ dependencies = [
  "instant",
  "libc",
  "redox_syscall 0.1.57",
- "smallvec 1.6.1",
+ "smallvec",
  "winapi 0.3.9",
 ]
 
@@ -1746,15 +1687,6 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "0.6.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b97fcaeba89edba30f044a10c6a3cc39df9c3f17d7cd829dd1446cab35f890e0"
-dependencies = [
- "maybe-uninit",
-]
-
-[[package]]
-name = "smallvec"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
@@ -2161,7 +2093,7 @@ source = "git+https://github.com/dpbriggs/x7.git#a18ccd76023a7b5a5dfc8c1d133e3de
 dependencies = [
  "anyhow",
  "bigdecimal",
- "dashmap",
+ "dashmap 3.11.10",
  "im",
  "itertools 0.9.0",
  "nom",

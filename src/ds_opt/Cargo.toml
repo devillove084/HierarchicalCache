@@ -19,7 +19,7 @@ sloggers = "0.3.4"
 lazy_static = "1.4.0"
 slog = "2.5.2"
 serde = "1.0.103"
-serde_derive = "1.0.103"
+serde_derive = "1.0.123"
 bincode = "1.2.0"
 structopt = "0.3.5"
 directories = "2.0.2"
@@ -31,7 +31,7 @@ seahash = "3.0.6"
 futures = "0.3.1"
 futures-util = "0.3.1"
 serde_bytes = "0.11.3"
-#dashmap = { version = "3.11.10", features = ["serde"] }
+dashmap = { version = "4.0.2", features = ["serde"] }
 memchr = "2.3.0"
 smallvec = "1.4.1"
 x7 = { git = "https://github.com/dpbriggs/x7.git", version = "*" }

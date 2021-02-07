@@ -2,11 +2,11 @@ use bytes::Bytes;
 use std::convert::TryFrom;
 use std::fmt::Debug;
 
-//use crate::bloom::{bloom_interact, BloomOps};
+use crate::bloom::{bloom_interact, BloomOps};
 use crate::hashes::{hash_interact, HashOps};
 use crate::keys::{key_interact, KeyOps};
 use crate::lists::{list_interact, ListOps};
-//use crate::misc::MiscOps;
+use crate::misc::MiscOps;
 use crate::sets::{set_interact, SetOps};
 use crate::sorted_sets::{zset_interact, ZSetOps};
 use crate::stack::{stack_interact, StackOps};
