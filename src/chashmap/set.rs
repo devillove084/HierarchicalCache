@@ -1,22 +1,22 @@
-use crate::epoch::Guard;
-use crate::iter::Keys;
-use crate::HashMap;
+use super::epoch::Guard;
+use super::iter::Keys;
+use super::HashMap;
 use std::borrow::Borrow;
 use std::fmt::{self, Debug, Formatter};
 use std::hash::{BuildHasher, Hash};
 use std::iter::FromIterator;
 
-pub struct HashSet<T, S = crate::DefaultHashBuilder> {
+pub struct HashSet<T, S = super::DefaultHashBuilder> {
     pub(crate) map: HashMap<T, (), S>,
 }
 
-impl<T> HashSet<T, crate::DefaultHashBuilder> {
+impl<T> HashSet<T, super::DefaultHashBuilder> {
     pub fn new() -> Self {
         Self::default()
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity_and_hasher(capacity, crate::DefaultHashBuilder::default())
+        Self::with_capacity_and_hasher(capacity, super::DefaultHashBuilder::default())
     }
 }
 
@@ -42,7 +42,7 @@ impl<T, S> HashSet<T, S> {
         }
     }
 
-    pub fn guard(&self) -> crate::epoch::Guard {
+    pub fn guard(&self) -> super::epoch::Guard {
         self.map.guard()
     }
 

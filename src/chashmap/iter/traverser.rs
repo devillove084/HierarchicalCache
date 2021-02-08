@@ -1,5 +1,5 @@
-use crate::chashmap::node::{BinEntry, Node, TreeNode};
-use crate::chashmap::raw::Table;
+use super::super::node::{BinEntry, Node, TreeNode};
+use super::super::raw::Table;
 use crossbeam_epoch::{Guard, Shared};
 use std::sync::atomic::Ordering;
 
@@ -141,7 +141,7 @@ impl<'g, K, V> Iterator for NodeIter<'g, K, V> {
                         continue;
                     }
                     BinEntry::Node(node) => {
-                        e = Some(node);
+                        e = Some(&node);
                     }
                     BinEntry::Tree(tree_bin) => {
                         e = Some(

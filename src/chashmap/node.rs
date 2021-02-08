@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use crate::raw::Table;
+use super::raw::Table;
 use core::sync::atomic::{spin_loop_hint, AtomicBool, AtomicI64, Ordering};
 use crossbeam_epoch::{Atomic, Guard, Owned, Shared};
 use parking_lot::Mutex;

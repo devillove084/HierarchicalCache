@@ -1,4 +1,4 @@
-use crate::node::*;
+use super::node::*;
 use crossbeam_epoch::{Atomic, Guard, Owned, Pointer, Shared};
 use std::borrow::Borrow;
 use std::fmt::Debug;

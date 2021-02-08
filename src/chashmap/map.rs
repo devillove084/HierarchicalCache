@@ -123,13 +123,13 @@ where
     }
 }
 
-impl<K, V> HashMap<K, V, crate::DefaultHashBuilder> {
+impl<K, V> HashMap<K, V, super::DefaultHashBuilder> {
     pub fn new() -> Self {
         Self::default()
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
-        Self::with_capacity_and_hasher(capacity, crate::DefaultHashBuilder::default())
+        Self::with_capacity_and_hasher(capacity, super::DefaultHashBuilder::default())
     }
 }
 

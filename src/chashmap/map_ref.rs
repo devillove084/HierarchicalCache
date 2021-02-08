@@ -8,7 +8,7 @@ use std::fmt::{self, Debug, Formatter};
 use std::hash::{BuildHasher, Hash};
 use std::ops::Index;
 
-pub struct HashMapRef<'map, K, V, S = crate::DefaultHashBuilder> {
+pub struct HashMapRef<'map, K, V, S = super::DefaultHashBuilder> {
     pub(crate) map: &'map HashMap<K, V, S>,
     guard: GuardRef<'map>,
 }
