@@ -41,17 +41,3 @@ where
 
 impl<'a, K, V, S> FusedIterator for Iter<'a, K, V, S> where S: Store<K, V> {}
 
-#[cfg(test)]
-mod tests {
-    use crate::Cache;
-
-    #[test]
-    fn iter() {
-        let mut cache = Cache::<u8, u8>::new(10);
-        assert!(cache.insert(1, 1).is_ok());
-        assert!(cache.insert(2, 2).is_ok());
-        assert!(cache.insert(3, 3).is_ok());
-        let items = cache.iter().collect::<Vec<(&u8, &u8)>>();
-        assert_eq!(items, vec![(&1, &1), (&2, &2), (&3, &3)])
-    }
-}

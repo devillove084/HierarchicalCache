@@ -1,4 +1,4 @@
-use crate::{HashMap, HashMapRef, HashSet, HashSetRef};
+use super::{HashMap, HashMapRef, HashSet, HashSetRef};
 use serde::{
     de::{MapAccess, SeqAccess, Visitor},
     Deserialize, Deserializer, Serialize, Serializer,

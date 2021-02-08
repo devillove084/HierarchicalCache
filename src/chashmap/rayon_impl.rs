@@ -1,4 +1,4 @@
-use crate::{HashMap, HashMapRef, HashSet, HashSetRef};
+use super::{HashMap, HashMapRef, HashSet, HashSetRef};
 use rayon::iter::{FromParallelIterator, IntoParallelIterator, ParallelExtend, ParallelIterator};
 use std::hash::{BuildHasher, Hash};
 

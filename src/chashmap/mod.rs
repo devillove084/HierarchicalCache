@@ -3,12 +3,12 @@
 use crossbeam_epoch::Guard;
 use std::ops::Deref;
 
-mod map;
-mod map_ref;
-mod node;
-mod raw;
-mod set;
-mod set_ref;
+pub mod map;
+pub mod map_ref;
+pub mod node;
+pub mod raw;
+pub mod set;
+pub mod set_ref;
 
 
 #[cfg(feature = "rayon")]

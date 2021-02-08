@@ -1,9 +1,9 @@
-mod cache;
-mod iter;
-mod metrics;
-mod store;
-mod tiny_lfu;
-mod ttl;
+pub mod cache;
+pub mod iter;
+pub mod metrics;
+pub mod store;
+pub mod tiny_lfu;
+pub mod ttl;
 
 pub use cache::{Cache, OnEvict};
 pub use metrics::Metrics;
