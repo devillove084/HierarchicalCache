@@ -5,6 +5,9 @@
 
 //use std::sync::Arc;
 
+#[macro_use]
+extern crate lazy_static;
+
 mod lcache;
 mod chashmap;
 // use chashmap::*;

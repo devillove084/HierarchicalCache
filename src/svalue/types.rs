@@ -1,7 +1,10 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, sync::atomic::AtomicU64};
 
 use bytes::Bytes;
 use smallvec::SmallVec;
+use std::sync::Arc;
+use serde::{Serialize, Deserialize};
+use parking_lot::{Mutex, RwLock};
 
 use crate::chashmap::HashMap;
 
@@ -118,3 +121,19 @@ impl ReturnValue {
 
 pub type KeyList = HashMap<Key, VecDeque<Value>>;
 pub type KeyStack = HashMap<Key, Stack<Value>>;
+
+pub type StateRef = Arc<State>;
+#[derive(Default)]
+pub struct StateStore {
+    pub states: HashMap<Index, StateRef>,
+    pub commands_ran_since_save: AtomicU64,
+}
+
+
+#[derive(Default)]
+pub struct State {
+
+    pub stacks: KeyStack,
+
+    //pub reciept_map: Mutex<RecieptMap>,
+}
