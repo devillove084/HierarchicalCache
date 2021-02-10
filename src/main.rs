@@ -8,12 +8,13 @@
 #[macro_use]
 extern crate lazy_static;
 
-mod lcache;
 mod chashmap;
+mod lcache;
 // use chashmap::*;
 
 mod svalue;
 use svalue::*;
+use zip_list::ZipList;
 
 // use lcache::{Cache, OnEvict};
 // use std::time::Duration;
@@ -28,17 +29,14 @@ use svalue::*;
 // }
 
 fn main() {
-
-    // test for svalue
-    let mut sk = svalue::sorted_set::OrderedSkipList::new();
-    for i in 0..100 {
-        sk.insert(i);
-    }
-    
-    println!("{:?}", sk.len());
-    
-    
-    
+    let mut list = ZipList::new();
+    let content = &['a' as u8; 250];
+    list.push(content);
+    list.push(content);
+    list.push("11".as_bytes());
+    //list.inner_insert(list.header_len(), big);
+    let result = list.len();
+    println!("Len is {}", result);
 
     // This is for cache test!!!
     // let mut cache = Cache::with_on_evict(10, Evict::default()).with_metrics();
@@ -74,8 +72,6 @@ fn main() {
     //     cache.metrics().expect("Cache should have metrics")
     // );
 
-    
-    
     // let _map = HashMap::<usize, usize>::new();
 
     // let guard = _map.guard();
@@ -83,7 +79,6 @@ fn main() {
     // assert!(old.is_none());
     // let e = _map.get_key_value(&42, &guard);
     // print!("{:?}", e);
-
 
     // print!("Single insert and query!!");
 
@@ -117,7 +112,4 @@ fn main() {
     //     println!("{:?}", kv);
     //     assert!(kv == (&i, &0) || kv == (&i, &1));
     // }
-
-
-
 }
