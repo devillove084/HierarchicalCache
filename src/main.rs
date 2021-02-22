@@ -13,6 +13,9 @@ mod lcache;
 // use chashmap::*;
 
 mod svalue;
+mod db;
+
+use db::*;
 use svalue::*;
 use zip_list::ZipList;
 
@@ -29,14 +32,16 @@ use zip_list::ZipList;
 // }
 
 fn main() {
-    let mut list = ZipList::new();
-    let content = &['a' as u8; 250];
-    list.push(content);
-    list.push(content);
-    list.push("11".as_bytes());
-    //list.inner_insert(list.header_len(), big);
-    let result = list.len();
-    println!("Len is {}", result);
+    //db::server::ttest();
+    //let _ = db::db::DB::new(0);
+    // let mut list = ZipList::new();
+    // let content = &['a' as u8; 250];
+    // list.push(content);
+    // list.push(content);
+    // list.push("11".as_bytes());
+    // //list.inner_insert(list.header_len(), big);
+    // let result = list.len();
+    // println!("Len is {}", result);
 
     // This is for cache test!!!
     // let mut cache = Cache::with_on_evict(10, Evict::default()).with_metrics();

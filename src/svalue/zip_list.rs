@@ -2,7 +2,7 @@ use std::mem;
 use std::iter::Chain;
 use std::iter::Cloned;
 use std::slice;
-use crate::util::bytes_to_i64;
+use super::util::bytes_to_i64;
 
 const ZIP_LIST_I16_ENC: u8 = 0b1100_0000;
 const ZIP_LIST_I32_ENC: u8 = 0b1101_0000;

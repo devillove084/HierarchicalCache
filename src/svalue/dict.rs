@@ -198,13 +198,10 @@ impl<K, V> Dict<K, V>
                 return Some((k, v));
             }
 
-            // if the dict is not rehashing, the ht[1]
-            // must be empty, there is no need to go there
             if !self.is_rehashing() {
                 return None;
             }
         }
-        // not found in both ht[0] and ht[1]
         None
     }
 
