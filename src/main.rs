@@ -8,10 +8,9 @@
 #[macro_use]
 extern crate lazy_static;
 
+mod gossip;
 mod chashmap;
 mod lcache;
-// use chashmap::*;
-
 mod svalue;
 mod db;
 
@@ -32,6 +31,8 @@ use zip_list::ZipList;
 // }
 
 fn main() {
+    
+    
     //db::server::ttest();
     //let _ = db::db::DB::new(0);
     // let mut list = ZipList::new();

@@ -1,4 +1,4 @@
-use super::RobjPtr;
+use super::object::RobjPtr;
 use super::linked_list::LinkedList;
 
 pub type List = LinkedList<RobjPtr>;

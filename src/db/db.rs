@@ -3,7 +3,7 @@ use std::{rc::Rc, string, time::SystemTime};
 use rand::Rng;
 
 use crate::svalue::dict::Dict;
-use crate::svalue::RobjPtr;
+use crate::svalue::object::RobjPtr;
 use crate::svalue::hash::string_object_hash;
 
 pub struct DB {

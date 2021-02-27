@@ -1,5 +1,5 @@
 use std::rc::{Rc, Weak};
-use super::{RobjPtr, Robj};
+use super::object::{RobjPtr, Robj};
 use rand::prelude::*;
 use std::cell::RefCell;
 use std::iter::Iterator;

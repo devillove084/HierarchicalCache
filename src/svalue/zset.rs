@@ -1,4 +1,4 @@
-use super::RobjPtr;
+use super::object::RobjPtr;
 use super::skip_list::SkipList;
 use super::dict::Dict;
 use super::hash;

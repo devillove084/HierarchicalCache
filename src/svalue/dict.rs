@@ -355,7 +355,7 @@ impl<K, V> Dict<K, V>
             bucket += self.ht[1].size;
         }
 
-        let mut which: usize = rng.gen_range(0, bucket);
+        let mut which: usize = rng.gen_range(0..bucket);
 
         loop {
             let mut idx: usize = which;
@@ -373,7 +373,7 @@ impl<K, V> Dict<K, V>
             }
 
             if list_len > 0 {
-                let n = rng.gen_range(0, list_len);
+                let n = rng.gen_range(0..list_len);
                 let kv = ht.iter(idx)
                     .skip(n)
                     .next()

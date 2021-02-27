@@ -1,4 +1,4 @@
-use super::{RobjPtr, RobjEncoding};
+use super::object::{RobjPtr, RobjEncoding};
 //use murmurhash64::murmur_hash64a;
 
 pub fn string_object_hash(object: &RobjPtr, seed: u64) -> usize {
