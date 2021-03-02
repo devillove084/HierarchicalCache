@@ -29,3 +29,5 @@ log = "0.4.14"
 blake3 = "0.3.7"
 serde_cbor = "0.11.1"
 rand = "0.8.3"
+num = {version = "0.3.1", features = ["serde"]}
+quickcheck = "0.9"

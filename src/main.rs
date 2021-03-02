@@ -13,6 +13,7 @@ mod chashmap;
 mod lcache;
 mod svalue;
 mod db;
+mod crdts;
 
 use db::*;
 use svalue::*;
