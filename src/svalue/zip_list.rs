@@ -298,6 +298,7 @@ impl Iterator for EncodingIter {
     }
 }
 
+#[derive(Debug)]
 pub enum ZipListValue<'a> {
     Bytes(&'a [u8]),
     Int(i64),

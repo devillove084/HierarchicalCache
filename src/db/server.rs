@@ -1,8 +1,13 @@
+
+use std::net::SocketAddr;
+
+use crate::crdts;
+
 use super::db::DB;
-use super::ae::Fd;
 
 pub struct Server {
-    pub port: u16,
-    pub db: Vec<DB>,
-    pub fd: Fd,
+    //port: u16,
+    db: Vec<DB>,
+    local_addr: SocketAddr,
 }
+
