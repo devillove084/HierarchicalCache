@@ -17,9 +17,10 @@ mod crdts;
 
 use db::*;
 use svalue::*;
+//use svalue::{self::*, zip_list::{self, ZipListNodeMut}};
 use zip_list::ZipList;
 
-// use lcache::{Cache, OnEvict};
+use lcache::{Cache, OnEvict};
 // use std::time::Duration;
 
 // #[derive(Default, Debug)]
@@ -31,9 +32,31 @@ use zip_list::ZipList;
 //     }
 // }
 
+#[derive(Default, Debug)]
+struct my_struct {}
+
+impl OnEvict<usize, ZipList> for my_struct {
+    fn evict(&self, k: &usize, v: &ZipList) {
+        println!("Evict item. k = {}", k);
+    }
+}
+
 fn main() {
     
-    
+    let mut test = Cache::with_on_evict(100000, my_struct::default()).with_metrics();
+    let mut l = zip_list::ZipList::new();
+    let content = &['a' as u8; 1000];
+    let content_2 = &['b' as u8; 1000];
+    //println!("{:?}", content);
+
+    l.push(content);
+    l.push(content_2);
+    let result = test.insert(1, l).expect("Item is not inserted");
+    let p = test.get(&1).unwrap();
+    for i in p.iter() {
+        println!("{:?}", i);
+    }
+
     //db::server::ttest();
     //let _ = db::db::DB::new(0);
     // let mut list = ZipList::new();
