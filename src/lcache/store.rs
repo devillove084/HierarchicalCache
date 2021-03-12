@@ -59,9 +59,7 @@ impl Hash for SampleItem {
 #[derive(Debug)]
 pub struct Item<K, V> {
     pub expiration_time: Option<SystemTime>,
-
     pub k: K,
-
     pub v: V,
 }
 
