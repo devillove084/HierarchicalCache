@@ -1,10 +1,47 @@
-use std::{rc::Rc, string, time::SystemTime};
+use std::{hash::Hasher, marker::PhantomData, ops::DerefMut, rc::Rc, string, time::SystemTime};
 
+use cache::{Cache, OnEvict};
 use rand::Rng;
 
-use crate::svalue::dict::Dict;
+use crate::{lcache::{cache::{self, VoidEvict}, tiny_lfu::MAX_WINDOW_SIZE}, svalue::{dict::Dict, object::Robj}};
 use crate::svalue::object::RobjPtr;
 use crate::svalue::hash::string_object_hash;
+
+pub struct DBCache {
+    id: usize,
+    store: Cache<Robj, Robj>,
+}
+
+impl DBCache {
+    pub fn new(id: usize) -> DBCache {
+        DBCache {
+            id,
+            store: Cache::with_window_size(1024 * 1024, MAX_WINDOW_SIZE),
+        }
+    }
+
+    pub fn remove(&mut self, key: &Robj) -> Result<(), ()> {
+        let _ = self.store.remove(key).ok_or_else(|| 0);
+        Ok(())
+    }
+
+    pub fn delete_key(&mut self, key: &Robj) -> Result<(), ()> {
+        self.remove(key)
+    }
+
+    pub fn look_up_key(&mut self, key: &Robj) -> Option<&mut Robj> {
+        let value = self.store.get_mut(key);
+        //let r = value.unwrap();
+        match value {
+            None => None,
+            Some(_) => Some(value.unwrap()),
+        }
+    }
+
+    
+    
+}
+
 
 pub struct DB {
     pub id: usize,

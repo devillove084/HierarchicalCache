@@ -1,7 +1,9 @@
-use std::time::SystemTime;
+use std::{hash::{Hash, Hasher}, time::SystemTime};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::error::Error;
+
+use crate::lcache::OnEvict;
 
 use super::{hash, list::List};
 use super::zip_list::ZipList;
@@ -60,13 +62,31 @@ pub trait ObjectData {
 }
 
 type Pointer = Box<dyn ObjectData>;
-pub type RobjPtr = Rc<RefCell<Robj>>;
+type RobjPtrPre = RefCell<Robj>;
+pub type RobjPtr = Rc<RobjPtrPre>;
 
 pub struct Robj {
     obj_type: RobjType,
     encoding: RobjEncoding,
     lru: SystemTime,
     ptr: Pointer,
+}
+
+impl Eq for Robj {}
+
+impl Hash for Robj {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        
+    }
+}
+
+impl PartialEq for Robj {
+    fn eq(&self, other: &Self) -> bool {
+        if self.obj_type == other.obj_type {
+            return true;
+        }
+        return false;
+    }
 }
 
 pub trait SetWrapper {
@@ -754,6 +774,7 @@ impl Robj {
         }
     }
 }
+
 
 impl DictPartialEq for RobjPtr {
     fn eq(&self, other: &Self) -> bool {

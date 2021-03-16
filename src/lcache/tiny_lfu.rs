@@ -3,7 +3,7 @@ use probabilistic_collections::cuckoo::CuckooFilter;
 use std::cmp;
 use std::collections::HashSet;
 
-pub const MAX_WINDOW_SIZE: usize = 10000;
+pub const MAX_WINDOW_SIZE: usize = 1024 * 1024 * 1024;
 
 pub trait TinyLFU {
     fn estimate(&self, k: &u64) -> i64;

@@ -15,6 +15,7 @@ pub trait OnEvict<K, V> {
     fn evict(&self, k: &K, v: &V);
 }
 
+#[derive(Default)]
 pub struct VoidEvict<K, V> {
     _k: PhantomData<K>,
     _v: PhantomData<V>,

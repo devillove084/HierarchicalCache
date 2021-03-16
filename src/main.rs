@@ -15,10 +15,12 @@ mod svalue;
 mod db;
 mod crdts;
 
-use db::*;
-use svalue::*;
+use std::string;
+
+// use db::*;
+use svalue::object::{Robj, RobjPtr};
 //use svalue::{self::*, zip_list::{self, ZipListNodeMut}};
-use zip_list::ZipList;
+//use zip_list::ZipList;
 
 use lcache::{Cache, OnEvict};
 // use std::time::Duration;
@@ -32,30 +34,51 @@ use lcache::{Cache, OnEvict};
 //     }
 // }
 
-#[derive(Default, Debug)]
-struct my_struct {}
+// #[derive(Default, Debug)]
+// struct my_struct {}
 
-impl OnEvict<usize, ZipList> for my_struct {
-    fn evict(&self, k: &usize, v: &ZipList) {
-        println!("Evict item. k = {}", k);
+// impl OnEvict<usize, ZipList> for my_struct {
+//     fn evict(&self, k: &usize, v: &ZipList) {
+//         println!("Evict item. k = {}", k);
+//     }
+// }
+
+
+#[derive(Default,Debug)]
+struct DB_Cache {}
+
+impl OnEvict<usize, db::db::DB> for DB_Cache {
+    fn evict(&self, k: &usize, v: &db::db::DB) {
+        println!("hhhhh {}", k);
     }
 }
 
 fn main() {
     
-    let mut test = Cache::with_on_evict(100000, my_struct::default()).with_metrics();
-    let mut l = zip_list::ZipList::new();
-    let content = &['a' as u8; 1000];
-    let content_2 = &['b' as u8; 1000];
-    //println!("{:?}", content);
-
-    l.push(content);
-    l.push(content_2);
-    let result = test.insert(1, l).expect("Item is not inserted");
-    let p = test.get(&1).unwrap();
-    for i in p.iter() {
-        println!("{:?}", i);
+    let mut test = Cache::with_on_evict(100000, DB_Cache::default()).with_metrics();
+    let mut db_with_test = db::db::DB::new(0);
+    
+    for i in 0..100 {
+        db_with_test.dict.add(Robj::create_string_object_from_long(i), Robj::create_string_object_from_long(i));
     }
+
+    db_with_test.id = 3434;
+    
+    
+    
+    // let mut l = zip_list::ZipList::new();
+    // let content = &['a' as u8; 1000];
+    // let content_2 = &['b' as u8; 1000];
+    // //println!("{:?}", content);
+
+    // //let mut c = db::db::DB::new();
+    
+
+    // l.push(content);
+    // l.push(content_2);
+    // let result = test.insert(1, l).expect("Item is not inserted");
+    // let p = test.get(&1).unwrap();
+    
 
     //db::server::ttest();
     //let _ = db::db::DB::new(0);
