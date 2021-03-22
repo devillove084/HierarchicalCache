@@ -1,3 +1,4 @@
+#[allow(unused_attributes)]
 use core::cmp::Ordering;
 use core::convert::Infallible;
 use core::fmt::{self, Debug, Display};
@@ -128,10 +129,15 @@ impl<V, A: Ord> CmRDT for MVReg<V, A> {
                 }
                 // first filter out all values that are dominated by the Op clock
                 self.vals.retain(|(val_clock, _)| {
-                    matches!(
-                        val_clock.partial_cmp(&clock),
-                        None | Some(Ordering::Greater)
-                    )
+                    // matches!(
+                    //     val_clock.partial_cmp(&clock),
+                    //     None | Some(Ordering::Greater)
+                    // )
+                    let res = val_clock.partial_cmp(&clock);
+                    match res {
+                        Some(Ordering::Greater) => true,
+                        _ => false
+                    }
                 });
 
                 let mut should_add = true;

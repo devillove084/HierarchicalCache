@@ -2,6 +2,10 @@
 #![allow(unused_doc_comments)]
 #![allow(dead_code)]
 #![allow(unused_imports)]
+#![allow(non_camel_case_types)]
+#![allow(unused_variables)]
+#![allow(unused_mut)]
+#![allow(unused_must_use)]
 
 //use std::sync::Arc;
 
@@ -18,7 +22,7 @@ mod crdts;
 use std::string;
 
 // use db::*;
-use svalue::object::{Robj, RobjPtr};
+use svalue::{object::{Robj, RobjPtr}, zip_list::ZipList};
 //use svalue::{self::*, zip_list::{self, ZipListNodeMut}};
 //use zip_list::ZipList;
 
@@ -63,6 +67,14 @@ fn main() {
     }
 
     db_with_test.id = 3434;
+    
+    // let mut bug = db::db::DBCache::new(0);
+    // let mut l = ZipList::new();
+    // let content = &['a' as u8, 100];
+    // l.push(content);
+    // let v_test = String::from("Value");
+    // //bug.insert(v_test, l);
+    // let mut test_1 = Robj::cre
     
     
     

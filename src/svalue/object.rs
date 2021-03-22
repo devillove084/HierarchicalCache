@@ -1,4 +1,4 @@
-use std::{hash::{Hash, Hasher}, time::SystemTime};
+use std::{fmt::Debug, hash::{Hash, Hasher}, time::SystemTime};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::error::Error;
@@ -11,6 +11,7 @@ use super::dict::{Dict, DictPartialEq};
 use super::int_set::IntSet;
 use super::zset::Zset;
 
+use lazy_static::__Deref;
 //use crate::hash;
 use rand::prelude::*;
 use super::zip_list::ZipListValue;
@@ -19,7 +20,7 @@ use super::util::{bytes_vec, bytes_to_i64, bytes_to_f64};
 use std::cmp::Ordering;
 
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Copy, Clone, Hash, PartialEq, Debug)]
 pub enum RobjType {
     String,
     List,
@@ -62,32 +63,35 @@ pub trait ObjectData {
 }
 
 type Pointer = Box<dyn ObjectData>;
-type RobjPtrPre = RefCell<Robj>;
-pub type RobjPtr = Rc<RobjPtrPre>;
+pub type RobjPtr = Rc<RefCell<Robj>>;
+
+pub struct RobjPointer(Rc<RefCell<Robj>>);
+
+impl Hash for RobjPointer {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        unsafe {
+            (*self.0.deref().as_ptr()).obj_type.hash(state)
+        }
+    }
+}
+
+impl PartialEq for RobjPointer {
+    fn eq(&self, other: &Self) -> bool {
+        unsafe {
+            //(*self.0.deref().as_ptr()).ptr
+            (*self.0.deref().as_ptr()).obj_type == (*other.0.deref().as_ptr()).obj_type
+        }
+    }
+}
+
+impl Eq for RobjPointer {}
 
 pub struct Robj {
     obj_type: RobjType,
     encoding: RobjEncoding,
-    lru: SystemTime,
     ptr: Pointer,
 }
 
-impl Eq for Robj {}
-
-impl Hash for Robj {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        
-    }
-}
-
-impl PartialEq for Robj {
-    fn eq(&self, other: &Self) -> bool {
-        if self.obj_type == other.obj_type {
-            return true;
-        }
-        return false;
-    }
-}
 
 pub trait SetWrapper {
     fn sw_len(&self) -> usize;
@@ -214,7 +218,6 @@ impl Robj {
             Robj {
                 obj_type,
                 encoding,
-                lru: SystemTime::now(),
                 ptr,
             }
         ))

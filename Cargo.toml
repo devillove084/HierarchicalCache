@@ -1,9 +1,9 @@
+cargo-features = ["edition2021"]
 [package]
 name = "HierarchicalCache"
 version = "0.1.0"
 authors = ["devillove084"]
-edition = "2018"
-resolver = "2"
+edition = "2021"
 
 [profile.release]
 opt-level = 3
