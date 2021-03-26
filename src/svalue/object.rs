@@ -1,4 +1,4 @@
-use std::{fmt::Debug, hash::{Hash, Hasher}, time::SystemTime};
+use std::{borrow::BorrowMut, fmt::Debug, hash::{Hash, Hasher}, time::SystemTime};
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::error::Error;
@@ -20,7 +20,7 @@ use super::util::{bytes_vec, bytes_to_i64, bytes_to_f64};
 use std::cmp::Ordering;
 
 
-#[derive(Copy, Clone, Hash, PartialEq, Debug)]
+#[derive(Eq, Ord, Copy, Clone, Hash, PartialEq, Debug, PartialOrd)]
 pub enum RobjType {
     String,
     List,
@@ -29,7 +29,7 @@ pub enum RobjType {
     Hash,
 }
 
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Eq, Ord, Copy, Clone, PartialEq, Debug, PartialOrd)]
 pub enum RobjEncoding {
     Raw,
     Int,
@@ -41,6 +41,7 @@ pub enum RobjEncoding {
     SkipList,
     EmbStr,
 }
+
 
 pub trait ObjectData {
     fn bytes_ref(&self) -> &[u8] { panic!("This is not a byte slice") }
@@ -65,7 +66,23 @@ pub trait ObjectData {
 type Pointer = Box<dyn ObjectData>;
 pub type RobjPtr = Rc<RefCell<Robj>>;
 
+//#[derive(PartialOrd, Ord, Eq, Clone)]
+#[derive(Clone)]
 pub struct RobjPointer(Rc<RefCell<Robj>>);
+
+impl PartialOrd for RobjPointer {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for RobjPointer {
+    fn cmp(&self, other: &Self) -> Ordering {
+        unsafe{
+            (*self.0.deref().as_ptr()).encoding.cmp((*other.0.deref().as_ptr()).encoding.borrow_mut())
+        }
+    }
+}
 
 impl Hash for RobjPointer {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -84,8 +101,24 @@ impl PartialEq for RobjPointer {
     }
 }
 
+unsafe impl Sync for RobjPointer {
+
+}
+
+unsafe impl Send for RobjPointer {
+
+}
+
 impl Eq for RobjPointer {}
 
+// impl Clone for RobjPointer {
+//     fn clone(&self) -> Self {
+//         *self
+//     }
+// }
+
+
+// #[derive(PartialOrd, Ord, Eq, PartialEq)]
 pub struct Robj {
     obj_type: RobjType,
     encoding: RobjEncoding,
@@ -295,18 +328,20 @@ impl Robj {
         )
     }
 
-    pub fn create_raw_string_object(string: &str) -> RobjPtr {
-        let ret = Self::create_string_object(string);
-        ret.borrow_mut().encoding = RobjEncoding::Raw;
-        ret
-    }
+    // pub fn create_raw_string_object(string: &str) -> RobjPtr {
+    //     let ret = Self::create_string_object(string);
+    //     ret.borrow_mut().encoding = RobjEncoding::Raw;
+        
+    //     ret
+    // }
 
-    pub fn create_embedded_string_object(string: &str) -> RobjPtr {
-        // TODO: add embedded string support
-        let ret = Self::create_string_object(string);
-        ret.borrow_mut().encoding = RobjEncoding::EmbStr;
-        ret
-    }
+    // pub fn create_embedded_string_object(string: &str) -> RobjPtr {
+    //     // TODO: add embedded string support
+    //     let ret = Self::create_string_object(string);
+    //     ret.borrow_mut().encoding = RobjEncoding::EmbStr;
+    //     let i = ret.take();
+    //     ret
+    // }
 
     pub fn create_string_object_from_long(value: i64) -> Rc<RefCell<Robj>> {
         let bytes: Vec<u8> = bytes_vec(&value.to_string().as_bytes());
@@ -979,59 +1014,5 @@ impl<'a> Iterator for SWInterIter<'a> {
             }
         }
         None
-    }
-}
-
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn create_new_object() {
-        let _o: RobjPtr = Robj::create_object(
-            RobjType::String,
-            RobjEncoding::Raw,
-            Box::new(bytes_vec(b"hello")),
-        );
-    }
-
-    #[test]
-    fn create_new_string_object() {
-        let _o: RobjPtr = Robj::create_string_object("foo");
-        let _o2: RobjPtr = Robj::create_raw_string_object("bar");
-        let _o3: RobjPtr = Robj::create_embedded_string_object("hey");
-        let _o4: RobjPtr = Robj::create_bytes_object(b"foo");
-    }
-
-    #[test]
-    fn object_to_long() {
-        let objp = Robj::create_string_object("135");
-        let obj = objp.borrow();
-        if let Err(_) = obj.object_to_long() {
-            panic!("fail converting");
-        }
-
-        let objp = Robj::create_string_object("kmp");
-        let obj = objp.borrow();
-        if let Ok(_) = obj.object_to_long() {
-            panic!("not number");
-        }
-    }
-
-    #[test]
-    fn get_string_object_len() {
-        let objp = Robj::create_string_object("foobar");
-        assert_eq!(objp.borrow().string_object_len(), 6);
-    }
-
-    #[test]
-    fn create_from_number() {
-        let objp = Robj::create_string_object_from_long(56);
-        assert_eq!(objp.borrow().string(), b"56");
-        let objp = Robj::create_string_object_from_double(3.14);
-        assert_eq!(objp.borrow().string(), b"3.14");
-        let objp = Robj::create_string_object_from_double(0.0);
-        assert_eq!(objp.borrow().string(), b"0");
     }
 }

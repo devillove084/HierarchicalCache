@@ -21,12 +21,14 @@ mod crdts;
 
 use std::string;
 
+use db::db::DBCache;
 // use db::*;
 use svalue::{object::{Robj, RobjPtr}, zip_list::ZipList};
 //use svalue::{self::*, zip_list::{self, ZipListNodeMut}};
 //use zip_list::ZipList;
 
 use lcache::{Cache, OnEvict};
+use rand::Rng;
 // use std::time::Duration;
 
 // #[derive(Default, Debug)]
@@ -48,25 +50,41 @@ use lcache::{Cache, OnEvict};
 // }
 
 
-#[derive(Default,Debug)]
-struct DB_Cache {}
+// #[derive(Default,Debug)]
+// struct DB_Cache {}
 
-impl OnEvict<usize, db::db::DB> for DB_Cache {
-    fn evict(&self, k: &usize, v: &db::db::DB) {
-        println!("hhhhh {}", k);
-    }
-}
+// impl OnEvict<usize, db::db::DB> for DB_Cache {
+//     fn evict(&self, k: &usize, v: &db::db::DB) {
+//         println!("hhhhh {}", k);
+//     }
+// }
 
 fn main() {
     
-    let mut test = Cache::with_on_evict(100000, DB_Cache::default()).with_metrics();
-    let mut db_with_test = db::db::DB::new(0);
+    // let mut test = Cache::with_on_evict(100000, DB_Cache::default()).with_metrics();
+    // let mut db_with_test = db::db::DB::new(0);
     
-    for i in 0..100 {
-        db_with_test.dict.add(Robj::create_string_object_from_long(i), Robj::create_string_object_from_long(i));
+    // for i in 0..100 {
+    //     db_with_test.dict.add(Robj::create_string_object_from_long(i), Robj::create_string_object_from_long(i));
+    // }
+
+    let mut key = vec![1u8];
+    let mut value = vec![1u8];
+    let mut r = rand::thread_rng();
+    for i in 0..999 {
+        let n: u8 = r.gen();
+        key.push(n);
+        value.push(n);
     }
 
-    db_with_test.id = 3434;
+    println!("This is len of key {}", key.len());
+    println!("This is len of value {}", value.len());
+
+    let mut db_test = DBCache::new(0);
+
+
+
+
     
     // let mut bug = db::db::DBCache::new(0);
     // let mut l = ZipList::new();

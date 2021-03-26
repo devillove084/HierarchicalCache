@@ -11,44 +11,70 @@ use crate::svalue::hash::string_object_hash;
 pub struct DBCache {
     id: usize,
     store: Cache<RobjPointer, RobjPointer>,
-    expires: Cache<RobjPointer, RobjPointer>,
+    expires: Cache<RobjPointer, SystemTime>,
 }
 
 impl DBCache {
-    pub fn new() {
-
+    pub fn new(id: usize) -> DBCache {
+        DBCache {
+            id,
+            store: Cache::with_window_size(1024 * 1024, 100000),
+            expires: Cache::with_window_size(1024 * 1024, 100000),
+        }
     }
 
-    pub fn remove_expire() {
-
+    pub fn insert(&mut self, key: RobjPointer, value: RobjPointer) -> Result<Option<RobjPointer>, Option<()>> {
+        self.store.insert(key, value)
     }
 
-    pub fn set_expire() {
-
+    pub fn remove_expire(&mut self, key: &RobjPointer) -> Result<(), ()> {
+        let _  = self.expires.remove(&key).ok_or_else(|| 0);
+        Ok(())
     }
 
-    pub fn get_expire() {
-
+    pub fn set_expire(&mut self, key: RobjPointer, when: SystemTime) -> Result<Option<SystemTime>, Option<()>> {
+        self.expires.insert(key, when)
     }
 
-    pub fn expire_if_needed() {
-
+    pub fn get_expire(&mut self, key: &RobjPointer) -> Option<&SystemTime> {
+        self.expires.get_mut(key)
     }
 
-    pub fn delete() {
-
+    pub fn expire_if_needed(&mut self, key: &RobjPointer) -> Result<bool, ()> {
+        Ok(true)
     }
 
-    pub fn delete_key() {
+    pub fn delete(&mut self, key: &RobjPointer) -> Result<(), ()> {
+        if self.expires.len() == 0 {
+            return Err(())
+        }
 
+        let _ = self.expires.remove(key).ok_or_else(||0);
+        let _ = self.store.remove(key).ok_or_else(|| 0);
+        Ok(())
     }
 
-    pub fn look_up_key_read() {
-
+    pub fn delete_key(&mut self, key: &RobjPointer) -> Result<(), ()> {
+        if self.expires.len() != 0 {
+            let _ = self.expires.remove(key);
+        }
+        self.store.remove(key).ok_or_else(|| 0);
+        Ok(())
     }
 
-    pub fn look_up_key() {
-        
+    pub fn look_up_key_read(&mut self, key: &RobjPointer) -> Option<&RobjPointer> {
+        let _ = self.expire_if_needed(key);
+        self.look_up_key(key)
+    }
+
+    pub fn look_up_key(&mut self, key: &RobjPointer) -> Option<&RobjPointer> {
+        let e = self.store.get_mut(key);
+        let res = Some(e.unwrap());
+        res
+        // match e {
+        //     None => None,
+        //     Some(&mut RobjPointer) => Some(RobjPointer),
+        // }
     }
 }
 

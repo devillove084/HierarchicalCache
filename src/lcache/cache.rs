@@ -2,11 +2,11 @@
 
 use super::iter::Iter;
 use super::metrics::{MetricType, Metrics};
-use super::store::{Item, SampleItem, Storage, Store};
+use super::store::{Item, SampleItem, Storage_plus, Store};
 use super::tiny_lfu::{TinyLFU, TinyLFUCache, MAX_WINDOW_SIZE};
 
 use probabilistic_collections::SipHasherBuilder;
-use std::hash::{BuildHasher, Hash, Hasher};
+use std::{borrow::BorrowMut, hash::{BuildHasher, Hash, Hasher}};
 use std::marker::PhantomData;
 use std::sync::Mutex;
 use std::time::Duration;
@@ -29,7 +29,7 @@ pub struct Cache<
     K,
     V,
     E = VoidEvict<K, V>,
-    S = Storage<K, V>,
+    S = Storage_plus<K, V>,
     A = TinyLFUCache,
     H = SipHasherBuilder,
 > where
@@ -48,14 +48,17 @@ pub struct Cache<
     _v: PhantomData<V>,
 }
 
-impl<K: Eq + Hash, V> Cache<K, V> {
+impl<K, V> Cache<K, V>
+where 
+K: 'static + Sync + Send + Clone + Hash + Ord + Eq,
+V: 'static + Sync + Send, {
     pub fn new(capacity: usize) -> Self {
         Self::with_window_size(capacity, MAX_WINDOW_SIZE)
     }
 
     pub fn with_window_size(capacity: usize, window_size: usize) -> Self {
         assert_ne!(window_size, 0);
-        assert!(window_size <= 10_000);
+        //assert!(window_size <= 10_000);
         assert_ne!(capacity, 0);
         Self {
             _k: PhantomData::default(),
@@ -63,7 +66,7 @@ impl<K: Eq + Hash, V> Cache<K, V> {
             metrics: Mutex::new(None),
             on_evict: None,
             admit: Mutex::new(TinyLFUCache::new(window_size)),
-            store: Storage::with_capacity(capacity),
+            store: Storage_plus::with_capacity(capacity),
             hasher_builder: SipHasherBuilder::from_entropy(),
         }
     }
@@ -71,7 +74,8 @@ impl<K: Eq + Hash, V> Cache<K, V> {
 
 impl<K, V, E> Cache<K, V, E>
 where
-    K: Eq + Hash,
+    K: 'static + Sync + Send + Clone + Hash + Ord + Eq,
+    V: 'static + Sync + Send,
     E: OnEvict<K, V>,
 {
     pub fn with_on_evict(capacity: usize, on_evict: E) -> Self {
@@ -80,7 +84,7 @@ where
 
     pub fn with_on_evict_and_window_size(capacity: usize, on_evict: E, window_size: usize) -> Self {
         assert_ne!(window_size, 0);
-        assert!(window_size <= 10_000);
+        //assert!(window_size <= 10_000);
         assert_ne!(capacity, 0);
         Self {
             _k: PhantomData::default(),
@@ -88,7 +92,7 @@ where
             metrics: Mutex::new(None),
             on_evict: Some(on_evict),
             admit: Mutex::new(TinyLFUCache::new(window_size)),
-            store: Storage::with_capacity(capacity),
+            store: Storage_plus::with_capacity(capacity),
             hasher_builder: SipHasherBuilder::from_entropy(),
         }
     }
@@ -218,14 +222,14 @@ where
         result
     }
 
-    pub fn get_mut(&mut self, k: &K) -> Option<&mut V> {
+    pub fn get_mut(&mut self, k: &K) -> Option<&V> {
         let k = self.key_hash(k);
         {
             let mut admit = self.admit.lock().unwrap();
             admit.increment(&k);
         }
         let result = if let Some(item) = self.store.get_mut(&k) {
-            Some(&mut item.v)
+            Some(&item.v)
         } else {
             None
         };
