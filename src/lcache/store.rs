@@ -121,7 +121,7 @@ pub trait Store<K, V>: Iterator {
         expiration: Duration,
     ) -> Option<Item<K, V>>;
 
-    fn remove(&mut self, k: &u64) -> Option<Item<K, V>>;
+    fn remove(&mut self, k: &u64) -> Option<&Item<K, V>>;
 
     fn cleanup<E>(&mut self, on_evict: &Option<E>)
     where
@@ -236,18 +236,20 @@ V: 'static + Sync + Send, {
         Some(*i)
     }
 
-    fn remove(&mut self, k: &u64) -> Option<Item<K, V>> {
+    fn remove(&mut self, k: &u64) -> Option<&Item<K, V>> {
         let g = self.data.guard();
-        if let Some(item) = self.data.remove(&k, &g) {
-            if let Some(expiration_time) = &item.expiration_time {
-                self.expiration_map.remove(k, expiration_time);
-            }
-            let i = item;
-            //Some(*i.borrow_mut())
-            Some()
-        }else {
-            None
-        }
+        // if let Some(item) = self.data.remove(&k, &g) {
+        //     if let Some(expiration_time) = &item.expiration_time {
+        //         self.expiration_map.remove(k, expiration_time);
+        //     }
+        //     let i = item;
+        //     //Some(*i.borrow_mut())
+        //     Some(())
+        // }else {
+        //     None
+        // }
+        self.data.remove(k, &g)
+
     }
 
     fn cleanup<E>(&mut self, on_evict: &Option<E>)
